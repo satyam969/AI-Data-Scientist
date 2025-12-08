@@ -1,0 +1,36 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual Environments
+virt/
+venv/
+env/
+.env
+
+# Secrets (CRITICAL)
+.env
+*.env
+
+# Jupyter and Checkpoints
+.ipynb_checkpoints/
+*/.ipynb_checkpoints/*
+
+# Project Artifacts (Generated files)
+clean_data.csv
+preprocessor.pkl
+model.pkl
+label_encoder_*.pkl
+numeric_imputer.pkl
+categorical_imputer.pkl
+standard_scaler.pkl
+AI_Data_Engineered_Notebook.ipynb
+generated_cleaning_code.py
+
+# IDEs
+.vscode/
+.idea/
+
+# Streamlit
+.streamlit/
