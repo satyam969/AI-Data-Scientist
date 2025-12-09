@@ -191,13 +191,26 @@ if uploaded_file and os.environ.get("GOOGLE_API_KEY"):
                         st.session_state['generated_code'] = full_response
                         
                         # Display the reasoning
-                        st.markdown("#### 🤖 Agent's Strategy")
-                        st.info(full_response.split("```")[0]) # Show text
-                        
-                        # Extract code
+                        # --- IMPROVED SPLIT LOGIC ---
                         import re
+                        
+                        # 1. Extract the code block first
                         code_match = re.search(r"```python(.*?)```", full_response, re.DOTALL)
-                        clean_code = code_match.group(1) if code_match else full_response
+                        
+                        if code_match:
+                            clean_code = code_match.group(1)
+                            # 2. To get the strategy, remove the code block from the full response
+                            strategy_text = full_response.replace(code_match.group(0), "").strip()
+                        else:
+                            clean_code = full_response
+                            strategy_text = "The agent provided code directly without a text summary."
+
+                        # Display the reasoning
+                        st.markdown("#### 🤖 Agent's Strategy")
+                        if strategy_text:
+                            st.info(strategy_text)
+                        else:
+                            st.warning("No strategy text was returned by the AI, but code was generated.")
                         
                         with st.expander("View Generated Python Code"):
                             st.code(clean_code, language='python')

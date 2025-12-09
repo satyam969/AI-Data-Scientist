@@ -43,17 +43,86 @@ class DataEngineeringAgent:
             print(f"Starting Full-Scan on {len(df)} rows ({len(chunks)} chunks)...")
         
         prompt_template = ChatPromptTemplate.from_template("""
-        Analyze this snippet of raw data rows (JSON format):
-        {data_chunk}
-        
-        Identify SPECIFIC data quality issues. Look for:
-        1. Mixed types in the same column (e.g. strings in numeric cols).
-        2. Hidden delimiters (e.g. 'Delhi#2024' or 'John|Doe').
-        3. Dirty formats (Date variations like '12-01-2020' vs 'Jan 12, 2020').
-        4. Outliers or impossible values (Age = 150).
-        
-        Return ONLY a concise bulleted list of issues found. If none, say 'No major issues'.
-        """)
+You are a Senior Data Engineer and Data Quality Auditor.
+
+I am giving you a SMALL CHUNK of a LARGE DATASET in raw JSON format.
+You MUST analyze it *as if you were examining the entire dataset*.
+
+Your job is to identify **every possible data quality issue**, including deep, subtle, structural issues,
+NOT just surface-level problems.
+
+==============================
+RAW DATA CHUNK (JSON):
+{data_chunk}
+==============================
+
+Perform a THOROUGH and TECHNICAL audit of this data.  
+Identify issues in the following categories (if applicable):
+
+### 1 Schema / Structural Issues
+- Inconsistent column patterns
+- Columns that mix semantic meaning (e.g., “Name#ID”)
+- Auto-generated index columns mistakenly included
+- Column naming inconsistencies (spaces, symbols, cases, trailing characters)
+
+### 2 Type Consistency Issues
+- Mixed types inside columns (e.g., numbers + strings)
+- Booleans encoded as text
+- Numeric fields stored as text
+- Dates stored as free text instead of proper ISO format
+
+### 3 Missingness / Null Patterns
+- High missing ratio in columns
+- Structured missingness (e.g., missing only when Category=X)
+- Placeholder missing values: “-”, “?”, “None”, “N/A”, “nan”, “--”, “empty”
+
+### 4 Format / Delimiter Problems
+- Hidden delimiters (“|”, “#”, “/”, “;”, “||”, “##”)
+- Multi-value cells needing splitting (e.g., “A,B,C” or “Fail in AL401, AL402”)
+- Text fields containing embedded metadata
+
+### 5 Outliers & Invalid Values
+- Impossible values (negative ages, SGPA outside 0–10 range, etc.)
+- Category outliers (typos: “Femle”, “Mlae”)
+- Rare or suspicious one-off categories
+
+### 6 Label/Category Consistency
+- Slight variations (“regular”, “Regular”, “REGULAR”)
+- Mixed alphabets (“A+”, “A +”, “A+ ”)
+- Unexpected categories not seen elsewhere
+
+### 7 Entity Resolution Problems
+- Duplicate rows
+- Near-duplicates differing slightly in spelling
+- Records where Name/Roll No mismatch patterns
+
+### 8 Logical Integrity / Cross-Column Issues
+- SGPA inconsistent with subject grades
+- Date ranges impossible (end<start)
+- Columns statistically dependent but broken here
+
+### 9 Odd Statistical Patterns
+- Columns dominated by a single value
+- Columns with extremely high cardinality (e.g., IDs)
+- Columns with extremely low cardinality (useless features)
+
+### 10 Data Quality Red Flags (Critical)
+- Broken UTF-8 text
+- Values containing HTML/XML/JSON fragments
+- Leakage indicators (target leakage)
+- Sensitive data concerns (PII)
+
+---------------------------------------
+RETURN FORMAT (VERY IMPORTANT):
+- Return ONLY a concise bulleted list of issues you detect.
+- Do NOT summarize.
+- Do NOT explain positives.
+- If nothing is wrong, say: "No major issues observed in this chunk."
+---------------------------------------
+
+Be precise, technical, and exhaustive.
+""")
+
         
         total_chunks = len(chunks)
         for i, chunk in enumerate(chunks):
@@ -120,7 +189,8 @@ class DataEngineeringAgent:
         CRITICAL RULES:
         - **DO NOT CREATE DUMMY DATA.**
         - **USE THE EXISTING `df` VARIABLE.**
-        - Return ONLY the python code block wrapped in ```python ... ```.
+        - **OUTPUT FORMAT**: Provide the **Strategic Analysis** text FIRST, followed by the **Python Code** block.
+        - Return the python code block wrapped in ```python ... ```.
         """
         
         result = self.llm.invoke(prompt)
